@@ -66,13 +66,13 @@ def list_containers(client: docker.Client, args):
 
         ports = ""
         if 'Ports' in container:
-            ports = ', '.join([port_string(p) for p in container['Ports']])
+            ports = ', '.join([_port_string(p) for p in container['Ports']])
         row.append(ports)
 
     print(tabulate(table, headers=headers, tablefmt="plain"))
 
 
-def port_string(port_obj: dict) -> str:
+def _port_string(port_obj: dict) -> str:
     ip = "{}:".format(port_obj['IP']) if 'IP' in port_obj else ''
     private_port = port_obj['PrivatePort'] if 'PrivatePort' in port_obj else ''
     public_port = port_obj['PublicPort'] if 'PublicPort' in port_obj else ''
