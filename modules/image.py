@@ -113,7 +113,8 @@ def inspect_image(docker_client: docker.Client, args):
         return
 
     if args.json:
-        json.dumps(image, indent=4)
+        print(json.dumps(image, indent=4))
+        return
 
     print(yaml.dump(image, default_flow_style=False))
 
