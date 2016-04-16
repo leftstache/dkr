@@ -8,6 +8,7 @@ import json
 from datetime import datetime
 import pretty
 import re
+import yaml
 
 
 def command() -> list:
@@ -31,6 +32,12 @@ def import_command(docker_client: docker.Client, args):
     list_cmd.add_argument('--json', action='store_true', help='Render all as json')
     list_cmd.add_argument('--pprint', action='store_true', help='Dump contents using python\'s pprint function')
     list_cmd.set_defaults(func=list_images)
+
+    inspect_cmd = subparsers.add_parser('inspect', help="Inspects the detail of an image")
+    inspect_cmd.add_argument('image', help="The name or ID of the Image")
+    inspect_cmd.add_argument('--json', action='store_true', help='Render all as json')
+    inspect_cmd.add_argument('--pprint', action='store_true', help='Dump contents using python\'s pprint function')
+    inspect_cmd.set_defaults(func=inspect_image)
 
     pull_cmd = subparsers.add_parser('pull', help="Pulls an image")
     pull_cmd.add_argument('image', help="The name of the image to pull")
@@ -96,6 +103,19 @@ def list_images(client: docker.Client, args):
             row.append(_sizeof_fmt(image['VirtualSize']))
 
     print(tabulate(table, headers=headers, tablefmt="plain"))
+
+
+def inspect_image(docker_client: docker.Client, args):
+    image = docker_client.inspect_image(args.image)
+
+    if args.pprint:
+        pprint(image)
+        return
+
+    if args.json:
+        json.dumps(image, indent=4)
+
+    print(yaml.dump(image, default_flow_style=False))
 
 
 def pull_image(docker_client: docker.Client, args):
