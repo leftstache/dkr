@@ -8,32 +8,36 @@ import sys
 
 def load_modules(extensions_dir: str) -> dict:
     result = {}
-    directories = os.listdir(extensions_dir)
-    for file in directories:
-        if file.endswith(".py"):
-            module_name = file[:-3]
-            spec = importlib.util.spec_from_file_location(module_name, os.path.join(extensions_dir, file))
-            imported_module = importlib.util.module_from_spec(spec)
-            spec.loader.exec_module(imported_module)
 
-            if hasattr(imported_module, 'command'):
-                command_name = imported_module.command()
-                if isinstance(command_name, list):
-                    for name in command_name:
-                        result[name] = imported_module
-                elif isinstance(command_name, str):
-                    result[command_name] = imported_module
-            else:
-                result[module_name] = imported_module
+    if os.path.isdir(extensions_dir):
+        directories = os.listdir(extensions_dir)
+        for file in directories:
+            if file.endswith(".py"):
+                module_name = file[:-3]
+                spec = importlib.util.spec_from_file_location(module_name, os.path.join(extensions_dir, file))
+                imported_module = importlib.util.module_from_spec(spec)
+                spec.loader.exec_module(imported_module)
+
+                if hasattr(imported_module, 'command'):
+                    command_name = imported_module.command()
+                    if isinstance(command_name, list):
+                        for name in command_name:
+                            result[name] = imported_module
+                    elif isinstance(command_name, str):
+                        result[command_name] = imported_module
+                else:
+                    result[module_name] = imported_module
     return result
 
 
 def main():
     docker_client = docker.from_env(assert_hostname=False)
+
     script_directory = os.path.dirname(os.path.realpath(__file__))
     project_directory = os.path.dirname(script_directory)
-    built_in_modules = load_modules(os.path.join(project_directory, "modules"))
-    user_module_dir = os.path.expanduser("~/.dkr")
+    built_in_modules = load_modules(os.path.join(project_directory, "commands"))
+
+    user_module_dir = os.path.join(os.path.expanduser("~"), ".dkr", "commands")
     user_modules = load_modules(user_module_dir)
 
     modules = {}
