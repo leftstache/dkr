@@ -8,7 +8,13 @@ import pretty
 import re
 
 
-def help_summary():
+def command() -> list:
+    return ['container', 'c']
+
+
+def help_summary(name: str):
+    if name == 'c':
+        return 'Alias for "container"'
     return "Various commands for containers"
 
 
@@ -85,4 +91,3 @@ def _port_string(port_obj: dict) -> str:
         return "{}{}{}".format(ip, private_port, port_type)
 
     return ""
-

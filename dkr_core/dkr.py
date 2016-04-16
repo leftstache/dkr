@@ -15,8 +15,16 @@ def load_modules(extensions_dir: str) -> dict:
             spec = importlib.util.spec_from_file_location(module_name, os.path.join(extensions_dir, file))
             imported_module = importlib.util.module_from_spec(spec)
             spec.loader.exec_module(imported_module)
-            result[module_name] = imported_module
 
+            if hasattr(imported_module, 'command'):
+                command_name = imported_module.command()
+                if isinstance(command_name, list):
+                    for name in command_name:
+                        result[name] = imported_module
+                elif isinstance(command_name, str):
+                    result[command_name] = imported_module
+            else:
+                result[module_name] = imported_module
     return result
 
 
@@ -35,7 +43,7 @@ def main():
     subparsers = arg_parser.add_subparsers(title="Commands")
     for name, module in modules.items():
         if hasattr(module, 'import_command'):
-            subparser = subparsers.add_parser(name, help=module.help_summary() if hasattr(module, 'help_summary') else "Does something wonderful!")
+            subparser = subparsers.add_parser(name, help=module.help_summary(name) if hasattr(module, 'help_summary') else "Does something wonderful!")
             module.import_command(docker_client, subparser)
 
     parsed_args = arg_parser.parse_args()
