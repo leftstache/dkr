@@ -33,7 +33,8 @@ def main():
     script_directory = os.path.dirname(os.path.realpath(__file__))
     project_directory = os.path.dirname(script_directory)
     built_in_modules = load_modules(os.path.join(project_directory, "modules"))
-    user_modules = load_modules("/Users/joeljohnson/.dkr")
+    user_module_dir = os.path.expanduser("~/.dkr")
+    user_modules = load_modules(user_module_dir)
 
     modules = {}
     modules.update(built_in_modules)
