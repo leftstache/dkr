@@ -12,7 +12,7 @@ TODO: make pip installable
 
 ## To Extend
 
-Add any .py file to ~/.dkr. It should have the following functions:
+Add any .py file to `~/.dkr/commands/`. It should have the following functions:
 
 * `command()`: returns a `str` or `list` of `str`. The name of the subcommand(s).
 * `help_summary(str)`: takes a `str` returns a `str`. The returned string is what is displayed for the given command in `--help`.
