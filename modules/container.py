@@ -12,7 +12,7 @@ def command() -> list:
     return ['container', 'c']
 
 
-def help_summary(name: str):
+def help_summary(name: str) -> str:
     if name == 'c':
         return 'Alias for "container"'
     return "Various commands for containers"
