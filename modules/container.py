@@ -36,6 +36,14 @@ def import_command(docker_client: docker.Client, args):
     inspect_cmd.add_argument('--pprint', action='store_true', help='Dump contents using python\'s pprint function')
     inspect_cmd.set_defaults(func=inspect_container)
 
+    create_cmd = subparsers.add_parser('create', help="Create a new container")
+    create_cmd.add_argument('--id', action='store_true', help="Display the ID of the created name instead of the name")
+    # create_cmd.add_argument('-p', '--publish', nargs='+', help="Publish a container's port(s) to the host")
+    create_cmd.add_argument('--name', help="The name of the container")
+    create_cmd.add_argument('image', help="The image to create the container from")
+    create_cmd.add_argument('cmd', nargs="*", help="The command to run")
+    create_cmd.set_defaults(func=create_container)
+
 
 def default(client: docker.Client, args):
     print("No valid command specified. `{} container -h` for help.".format(sys.argv[0]))
@@ -98,6 +106,22 @@ def inspect_container(docker_client: docker.Client, args):
 
     print(yaml.dump(container, default_flow_style=False))
 
+
+def create_container(docker_client: docker.Client, args):
+    image = args.image
+    cmd = args.cmd if args.cmd else None
+    name = args.name if args.name else None
+
+    container = docker_client.create_container(image=image, command=cmd, name=name)
+
+    if container['Warnings']:
+        print("WARNING:", container['Warnings'], file=sys.stderr)
+
+    if args.id:
+        print(container['Id'])
+    else:
+        container = docker_client.inspect_container(container)
+        print(container['Name'][1:])
 
 
 def _port_string(port_obj: dict) -> str:
