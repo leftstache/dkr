@@ -24,7 +24,7 @@ def import_command(docker_client: docker.Client, args):
 
     list_cmd = subparsers.add_parser('list', help="Lists containers")
     list_cmd.add_argument('-a', '--all', action='store_true', help='Include non-running containers')
-    list_cmd.add_argument('-q', '--quiet', action='store_true', help='Include non-running containers')
+    list_cmd.add_argument('-q', '--quiet', action='store_true', help='Only print IDs')
     list_cmd.add_argument('--json', action='store_true', help='Render all as json')
     list_cmd.add_argument('--pprint', action='store_true', help='Dump contents using python\'s pprint function')
     list_cmd.set_defaults(func=list_containers)
