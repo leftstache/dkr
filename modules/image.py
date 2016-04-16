@@ -45,7 +45,7 @@ def import_command(docker_client: docker.Client, args):
     pull_cmd.set_defaults(func=pull_image)
 
     rm_cmd = subparsers.add_parser('rm', help="Removes an image")
-    rm_cmd.add_argument('image', help="The name of the image to remove")
+    rm_cmd.add_argument('image', nargs="+", help="The name of the image to remove")
     rm_cmd.add_argument('-f', '--force', action='store_true', help='Force removal of the image')
     rm_cmd.add_argument('--no-prune', action='store_true', help='Do not delete untagged parents')
     rm_cmd.set_defaults(func=rm_image)
@@ -150,15 +150,17 @@ def pull_image(docker_client: docker.Client, args):
 
 
 def rm_image(docker_client: docker.Client, args):
-    image = args.image
-    if ":" not in image:
-        image = "{}:latest".format(image)
+    images = args.image
 
-    try:
-        docker_client.remove_image(image, force=args.force, noprune=args.no_prune)
-        print("Removed image {}".format(image))
-    except docker.errors.NotFound as e:
-        print(e.explanation.decode('utf8'), file=sys.stderr)
+    for image in images:
+        if ":" not in image:
+            image = "{}:latest".format(image)
+
+        try:
+            docker_client.remove_image(image, force=args.force, noprune=args.no_prune)
+            print("Removed image {}".format(image))
+        except docker.errors.NotFound as e:
+            print(e.explanation.decode('utf8'), file=sys.stderr)
 
 
 def _sizeof_fmt(num, suffix='B'):
