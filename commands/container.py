@@ -31,7 +31,7 @@ def import_command(docker_client: docker.Client, args, state: dict):
     list_cmd.set_defaults(func=list_containers)
 
     inspect_cmd = subparsers.add_parser('inspect', help="Inspects the detail of an container")
-    inspect_cmd.add_argument('image', help="The name or ID of the Image")
+    inspect_cmd.add_argument('container', help="The name or ID of the Container")
     inspect_cmd.add_argument('--json', action='store_true', help='Render all as json')
     inspect_cmd.add_argument('--pprint', action='store_true', help='Dump contents using python\'s pprint function')
     inspect_cmd.set_defaults(func=inspect_container)
@@ -94,7 +94,12 @@ def list_containers(client: docker.Client, args, state: dict):
 
 
 def inspect_container(docker_client: docker.Client, args, state: dict):
-    container = docker_client.inspect_container(args.image)
+    if args.container == '-':
+        args.container = state['last_container']
+
+    container = docker_client.inspect_container(args.container)
+
+    state['last_container'] = container['Id']
 
     if args.pprint:
         pprint(container)
@@ -113,6 +118,8 @@ def create_container(docker_client: docker.Client, args, state: dict):
     name = args.name if args.name else None
 
     container = docker_client.create_container(image=image, command=cmd, name=name)
+
+    state['last_container'] = container['Id']
 
     if container['Warnings']:
         print("WARNING:", container['Warnings'], file=sys.stderr)
