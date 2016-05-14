@@ -22,7 +22,13 @@ Add any .py file to `~/.dkr/commands/`. It should have the following functions:
 
 ## Create Options
 
-The `dkr create` command has the `--option` (`-o`) flag that can be specified multiple times. These arguments get expanded to a dict. For example:
+The `dkr create` command has the `--option` (`-o`) flag that can be specified multiple times. The format is explained below.
+This can be used to specify any docker create arg, using the naming conventions used by [docker-py](http://docker-py.readthedocs.io/en/latest/api/#create_container)
+ 
+ 
+## Create Options Format
+ 
+These arguments get expanded to a dict. For example:
  
  ```bash
  dkr create -o key=value image_name
