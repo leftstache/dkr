@@ -1,5 +1,11 @@
 #!/usr/bin/env python3
 
+import sys
 from dkr_core.dkr import main
+from dkr_core.errors import DkrException
 
-main()
+try:
+    main()
+except DkrException as e:
+    print(e.message, file=sys.stderr)
+    sys.exit(e.exit_code)
