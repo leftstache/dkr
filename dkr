@@ -3,7 +3,7 @@
 import sys
 import docker.errors
 from dkr_core.dkr import main
-from dkr_core.errors import DkrException, INVALID_INPUT, DOCKER_ERROR
+from dkr_core.errors import DkrException, INVALID_INPUT, DOCKER_ERROR, UNKNOWN_ERROR
 
 try:
     main()
@@ -21,3 +21,9 @@ except docker.errors.APIError as e:
 except docker.errors.DockerException as e:
     print(e.explanation.decode('utf-8').strip(), file=sys.stderr)
     sys.exit(DOCKER_ERROR)
+except Exception as e:
+    message = str(e)
+    if not message or not message.strip():
+        message = "Unknown Error: {}".format(e.__repr__())
+    print(message.strip(), file=sys.stderr)
+    sys.exit(UNKNOWN_ERROR)
