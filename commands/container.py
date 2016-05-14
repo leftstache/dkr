@@ -19,7 +19,7 @@ def help_summary(name: str) -> str:
     return "Various commands for containers"
 
 
-def import_command(docker_client: docker.Client, args):
+def import_command(docker_client: docker.Client, args, state: dict):
     args.set_defaults(func=default)
     subparsers = args.add_subparsers(title="Container Commands")
 
@@ -45,11 +45,11 @@ def import_command(docker_client: docker.Client, args):
     create_cmd.set_defaults(func=create_container)
 
 
-def default(client: docker.Client, args):
+def default(client: docker.Client, args, state: dict):
     print("No valid command specified. `{} container -h` for help.".format(sys.argv[0]))
 
 
-def list_containers(client: docker.Client, args):
+def list_containers(client: docker.Client, args, state: dict):
     containers = client.containers(all=args.all, quiet=args.quiet)
 
     if args.pprint:
@@ -93,7 +93,7 @@ def list_containers(client: docker.Client, args):
     print(tabulate(table, headers=headers, tablefmt="plain"))
 
 
-def inspect_container(docker_client: docker.Client, args):
+def inspect_container(docker_client: docker.Client, args, state: dict):
     container = docker_client.inspect_container(args.image)
 
     if args.pprint:
@@ -107,7 +107,7 @@ def inspect_container(docker_client: docker.Client, args):
     print(yaml.dump(container, default_flow_style=False))
 
 
-def create_container(docker_client: docker.Client, args):
+def create_container(docker_client: docker.Client, args, state: dict):
     image = args.image
     cmd = args.cmd if args.cmd else None
     name = args.name if args.name else None

@@ -22,7 +22,7 @@ def help_summary(name: str) -> str:
 
 
 # noinspection PyUnusedLocal
-def import_command(docker_client: docker.Client, args):
+def import_command(docker_client: docker.Client, args, state: dict):
     args.set_defaults(func=default)
     subparsers = args.add_subparsers(title="Container Commands")
 
@@ -52,11 +52,11 @@ def import_command(docker_client: docker.Client, args):
 
 
 # noinspection PyUnusedLocal
-def default(client: docker.Client, args):
+def default(client: docker.Client, args, state: dict):
     print("No valid command specified. `{} image -h` for help.".format(sys.argv[0]), file=sys.stderr)
 
 
-def list_images(client: docker.Client, args):
+def list_images(client: docker.Client, args, state: dict):
     images = client.images(all=args.all)
 
     if args.pprint:
@@ -105,7 +105,7 @@ def list_images(client: docker.Client, args):
     print(tabulate(table, headers=headers, tablefmt="plain"))
 
 
-def inspect_image(docker_client: docker.Client, args):
+def inspect_image(docker_client: docker.Client, args, state: dict):
     image = docker_client.inspect_image(args.image)
 
     if args.pprint:
@@ -119,7 +119,7 @@ def inspect_image(docker_client: docker.Client, args):
     print(yaml.dump(image, default_flow_style=False))
 
 
-def pull_image(docker_client: docker.Client, args):
+def pull_image(docker_client: docker.Client, args, state: dict):
     CURSOR_UP_ONE = '\x1b[1A'
     ERASE_LINE = '\x1b[2K'
 
@@ -149,7 +149,7 @@ def pull_image(docker_client: docker.Client, args):
             previous_layer = this_id
 
 
-def rm_image(docker_client: docker.Client, args):
+def rm_image(docker_client: docker.Client, args, state: dict):
     images = args.image
 
     for image in images:
