@@ -47,7 +47,9 @@ def import_command(docker_client: docker.Client, args, state: dict):
     for cmd in [create_cmd, run_cmd]:
         cmd.add_argument('--id', action='store_true', help="Display the ID of the created name instead of the name")
         # cmd.add_argument('-p', '--publish', nargs='*', help="Publish a container's port(s) to the host")
-        cmd.add_argument('-o', '--option', action='append', help="Include a docker create option. See https://github.com/leftstache/dkr/blob/master/README.md for more information.")
+        option_help_msg = "Include a docker create option. " \
+                          "See https://github.com/leftstache/dkr/blob/master/README.md for more information."
+        cmd.add_argument('-o', '--option', action='append', help=option_help_msg)
         cmd.add_argument('--name', help="The name of the container")
         cmd.add_argument('image', help="The image to create the container from")
         cmd.add_argument('cmd', nargs="*", help="The command to run")
@@ -55,6 +57,17 @@ def import_command(docker_client: docker.Client, args, state: dict):
     start_cmd = subparsers.add_parser('start', help="Start an existing container")
     start_cmd.add_argument('container', nargs="+", help="The container to start")
     start_cmd.set_defaults(func=start_container)
+
+    stop_cmd = subparsers.add_parser('stop', help="Stops a running container")
+
+    if 'default_stop_time' not in state:
+        state['default_stop_time'] = 3600
+
+    stop_cmd_help = "The amount of time to wait, in seconds, before killing the container. " \
+                    "Default: {}".format(state['default_stop_time'])
+    stop_cmd.add_argument('-t', '--timeout', default=state['default_stop_time'], help=stop_cmd_help)
+    stop_cmd.add_argument('container', nargs="+", help="The container to stop")
+    stop_cmd.set_defaults(func=stop_container)
 
 
 def default(client: docker.Client, args, state: dict):
@@ -184,6 +197,17 @@ def run_container(docker_client: docker.Client, args, state: dict):
     create_container(docker_client, args, state)
     start_containers([state['last_container']], docker_client, state, print_update=False)
 
+
+def stop_container(docker_client: docker.Client, args, state: dict):
+    containers = args.container
+
+    for container in containers:
+        if container == '-':
+            container = state['last_container']
+        docker_client.stop(container, timeout=args.timeout)
+        print(container)
+
+    state['last_container'] = containers[-1]
 
 def _port_string(port_obj: dict) -> str:
     ip = "{}:".format(port_obj['IP']) if 'IP' in port_obj else ''
