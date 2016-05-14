@@ -2,10 +2,15 @@
 
 import sys
 import docker.errors
+import traceback
 from dkr_core.dkr import main
 from dkr_core.errors import DkrException, INVALID_INPUT, DOCKER_ERROR, UNKNOWN_ERROR
 
+debug = False
 try:
+    if '--debug' in sys.argv:
+        debug = True
+
     main()
 except DkrException as e:
     print(e.message, file=sys.stderr)
@@ -14,16 +19,24 @@ except docker.errors.APIError as e:
     status_code = e.response.status_code
     message = e.response.content.decode('utf-8').strip()
     print(message, file=sys.stderr)
+
+    if debug:
+        traceback.print_exc(file=sys.stderr)
+
     if status_code < 500:
         sys.exit(INVALID_INPUT)
     else:
         sys.exit(DOCKER_ERROR)
 except docker.errors.DockerException as e:
     print(e.explanation.decode('utf-8').strip(), file=sys.stderr)
+    if debug:
+        traceback.print_exc(file=sys.stderr)
     sys.exit(DOCKER_ERROR)
 except Exception as e:
     message = str(e)
     if not message or not message.strip():
         message = "Unknown Error: {}".format(e.__repr__())
     print(message.strip(), file=sys.stderr)
+    if debug:
+        traceback.print_exc(file=sys.stderr)
     sys.exit(UNKNOWN_ERROR)
