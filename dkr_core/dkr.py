@@ -46,7 +46,7 @@ def save_state(state, state_file):
     if not os.path.isdir(os.path.dirname(state_file)):
         os.makedirs(state_file)
 
-    json_data = json.dumps(state)
+    json_data = json.dumps(state, indent=2)
     with open(state_file, 'w') as file:
         file.write(json_data)
 
