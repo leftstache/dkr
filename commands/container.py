@@ -25,7 +25,7 @@ def help_summary(name: str) -> str:
 
 def import_command(docker_client: docker.Client, args, state: dict):
     args.set_defaults(func=default)
-    subparsers = args.add_subparsers(title="Container Commands")
+    subparsers = args.add_subparsers(title="Container Commands", metavar="COMMAND")
 
     list_cmd = subparsers.add_parser('list', help="Lists containers")
     list_cmd.add_argument('-a', '--all', action='store_true', help='Include non-running containers')
