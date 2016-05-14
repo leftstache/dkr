@@ -39,13 +39,18 @@ def import_command(docker_client: docker.Client, args, state: dict):
     inspect_cmd.set_defaults(func=inspect_container)
 
     create_cmd = subparsers.add_parser('create', help="Create a new container")
-    create_cmd.add_argument('--id', action='store_true', help="Display the ID of the created name instead of the name")
-    # create_cmd.add_argument('-p', '--publish', nargs='*', help="Publish a container's port(s) to the host")
-    create_cmd.add_argument('-o', '--option', action='append', help="Include a docker create option. See https://github.com/leftstache/dkr/blob/master/README.md for more information.")
-    create_cmd.add_argument('--name', help="The name of the container")
-    create_cmd.add_argument('image', help="The image to create the container from")
-    create_cmd.add_argument('cmd', nargs="*", help="The command to run")
     create_cmd.set_defaults(func=create_container)
+
+    run_cmd = subparsers.add_parser('run', help="Create a new container and start it")
+    run_cmd.set_defaults(func=run_container)
+
+    for cmd in [create_cmd, run_cmd]:
+        cmd.add_argument('--id', action='store_true', help="Display the ID of the created name instead of the name")
+        # cmd.add_argument('-p', '--publish', nargs='*', help="Publish a container's port(s) to the host")
+        cmd.add_argument('-o', '--option', action='append', help="Include a docker create option. See https://github.com/leftstache/dkr/blob/master/README.md for more information.")
+        cmd.add_argument('--name', help="The name of the container")
+        cmd.add_argument('image', help="The image to create the container from")
+        cmd.add_argument('cmd', nargs="*", help="The command to run")
 
     start_cmd = subparsers.add_parser('start', help="Start an existing container")
     start_cmd.add_argument('container', nargs="+", help="The container to start")
@@ -159,14 +164,25 @@ def create_container(docker_client: docker.Client, args, state: dict):
 def start_container(docker_client: docker.Client, args, state: dict):
     containers = args.container
 
-    container = None
+    started = start_containers(containers, docker_client, state, print_update=True)
+    state['last_container'] = started[-1]
+
+
+def start_containers(containers, docker_client, state, print_update=False) -> list:
+    result = []
     for container in containers:
         if container == '-':
             container = state['last_container']
+        docker_client.start(container)
+        if print_update:
+            print(container)
+        result.append(container)
+    return result
 
-            docker_client.start(container)
 
-    state['last_container'] = container
+def run_container(docker_client: docker.Client, args, state: dict):
+    create_container(docker_client, args, state)
+    start_containers([state['last_container']], docker_client, state, print_update=False)
 
 
 def _port_string(port_obj: dict) -> str:
