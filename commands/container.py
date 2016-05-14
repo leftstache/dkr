@@ -114,6 +114,10 @@ def inspect_container(docker_client: docker.Client, args, state: dict):
 
 def create_container(docker_client: docker.Client, args, state: dict):
     image = args.image
+    if image == '-':
+        image = state['last_image']
+    state['last_image'] = image
+
     cmd = args.cmd if args.cmd else None
     name = args.name if args.name else None
 
