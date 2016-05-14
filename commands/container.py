@@ -47,6 +47,10 @@ def import_command(docker_client: docker.Client, args, state: dict):
     create_cmd.add_argument('cmd', nargs="*", help="The command to run")
     create_cmd.set_defaults(func=create_container)
 
+    start_cmd = subparsers.add_parser('start', help="Start an existing container")
+    start_cmd.add_argument('container', nargs="+", help="The container to start")
+    start_cmd.set_defaults(func=start_container)
+
 
 def default(client: docker.Client, args, state: dict):
     print("No valid command specified. `{} container -h` for help.".format(sys.argv[0]))
@@ -150,6 +154,19 @@ def create_container(docker_client: docker.Client, args, state: dict):
     else:
         container = docker_client.inspect_container(container)
         print(container['Name'][1:])
+
+
+def start_container(docker_client: docker.Client, args, state: dict):
+    containers = args.container
+
+    container = None
+    for container in containers:
+        if container == '-':
+            container = state['last_container']
+
+            docker_client.start(container)
+
+    state['last_container'] = container
 
 
 def _port_string(port_obj: dict) -> str:
