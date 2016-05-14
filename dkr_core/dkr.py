@@ -7,6 +7,7 @@ import argparse
 import sys
 import os.path
 
+
 def load_modules(extensions_dir: str) -> dict:
     result = {}
 
