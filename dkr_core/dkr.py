@@ -70,7 +70,7 @@ def main():
         modules.update(user_modules)
 
         arg_parser = argparse.ArgumentParser(description="Extensible Docker CLI Client")
-        subparsers = arg_parser.add_subparsers(title="Commands")
+        subparsers = arg_parser.add_subparsers(title="Commands", metavar="COMMAND")
         for name, module in modules.items():
             if hasattr(module, 'import_command'):
                 subparser = subparsers.add_parser(name, help=module.help_summary(name) if hasattr(module, 'help_summary') else "Does something wonderful!")
