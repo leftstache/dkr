@@ -106,7 +106,11 @@ def list_images(client: docker.Client, args, state: dict):
 
 
 def inspect_image(docker_client: docker.Client, args, state: dict):
+    if args.image == '-':
+        args.image = state['last_image']
     image = docker_client.inspect_image(args.image)
+
+    state['last_image'] = image['RepoTags'][0]
 
     if args.pprint:
         pprint(image)
@@ -120,6 +124,9 @@ def inspect_image(docker_client: docker.Client, args, state: dict):
 
 
 def pull_image(docker_client: docker.Client, args, state: dict):
+    if args.image == '-':
+        args.image = state['last_image']
+
     CURSOR_UP_ONE = '\x1b[1A'
     ERASE_LINE = '\x1b[2K'
 
@@ -127,6 +134,8 @@ def pull_image(docker_client: docker.Client, args, state: dict):
 
     if not args.all_tags and ":" not in image:
         image = "{}:latest".format(image)
+
+    state['last_image'] = image
 
     print("Pulling {}".format(image))
     pull_status_gen = docker_client.pull(image, stream=True)
@@ -142,17 +151,26 @@ def pull_image(docker_client: docker.Client, args, state: dict):
             if previous_layer == this_id:
                 print(CURSOR_UP_ONE + ERASE_LINE + CURSOR_UP_ONE)
 
-            if 'progress' in pull_obj:
-                print("{} {} {}".format(pull_obj['status'], this_id, pull_obj['progress']))
+            if 'status' in pull_obj:
+                if 'progress' in pull_obj:
+                    print("{} {} {}".format(pull_obj['status'], this_id, pull_obj['progress']))
+                else:
+                    print("{} {}".format(pull_obj['status'], this_id))
+                previous_layer = this_id
             else:
-                print("{} {}".format(pull_obj['status'], this_id))
-            previous_layer = this_id
+                if 'error' in pull_obj:
+                    print("Error while pulling: {}".format(pull_obj['error']))
+                else:
+                    print("derp? {}".format(json.dumps(pull_obj)))
 
 
 def rm_image(docker_client: docker.Client, args, state: dict):
     images = args.image
 
     for image in images:
+        if image == '-':
+            image = state['last_image']
+
         if ":" not in image:
             image = "{}:latest".format(image)
 
