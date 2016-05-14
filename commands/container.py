@@ -8,6 +8,8 @@ import pretty
 import re
 import yaml
 
+from dkr_core import cmd_to_json
+
 
 def command() -> list:
     return ['container', 'c']
@@ -38,7 +40,8 @@ def import_command(docker_client: docker.Client, args, state: dict):
 
     create_cmd = subparsers.add_parser('create', help="Create a new container")
     create_cmd.add_argument('--id', action='store_true', help="Display the ID of the created name instead of the name")
-    # create_cmd.add_argument('-p', '--publish', nargs='+', help="Publish a container's port(s) to the host")
+    # create_cmd.add_argument('-p', '--publish', nargs='*', help="Publish a container's port(s) to the host")
+    create_cmd.add_argument('-o', '--option', action='append', help="Include a docker create option. See https://github.com/leftstache/dkr/blob/master/README.md for more information.")
     create_cmd.add_argument('--name', help="The name of the container")
     create_cmd.add_argument('image', help="The image to create the container from")
     create_cmd.add_argument('cmd', nargs="*", help="The command to run")
@@ -121,7 +124,21 @@ def create_container(docker_client: docker.Client, args, state: dict):
     cmd = args.cmd if args.cmd else None
     name = args.name if args.name else None
 
-    container = docker_client.create_container(image=image, command=cmd, name=name)
+    docker_args = {}
+
+    if 'option' in args:
+        user_docker_options = cmd_to_json.parse_options(args.option)
+        if user_docker_options:
+            docker_args.update(user_docker_options)
+
+    docker_args['image'] = image
+    docker_args['command'] = cmd
+    docker_args['name'] = name
+
+    if 'host_config' in docker_args:
+        docker_args['host_config'] = docker_client.create_host_config(**docker_args['host_config'])
+
+    container = docker_client.create_container(**docker_args)
 
     state['last_container'] = container['Id']
 
