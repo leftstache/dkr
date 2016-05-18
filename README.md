@@ -8,7 +8,9 @@ Extensible Docker CLI Client
 
 ## To Install
 
-TODO: make pip installable
+```bash
+pip install dkr
+```
 
 ## To Extend
 
