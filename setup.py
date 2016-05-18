@@ -24,6 +24,8 @@ setup(
     install_requires=[
         'docker-py>=1.8.1',
         'tabulate>=0.7.5',
-        'ansicolors>=1.0.2'
+        'ansicolors>=1.0.2',
+        'py-pretty>=1',
+        'pyyaml>=3.11'
     ]
 )
