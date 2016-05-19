@@ -1,2 +1,6 @@
 .idea
 *.pyc
+dist/dkr-0.0.1.tar.gz
+.tox/
+build/
+MANIFEST
