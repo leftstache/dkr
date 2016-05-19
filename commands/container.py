@@ -13,6 +13,21 @@ from dkr_core import errors
 from dkr_core import cmd_to_json
 
 
+class Port:
+    def __init__(self, ip: str=None, host_port: int=None, guest_port: int=None, proto: str="tcp"):
+        self.ip = ip
+        self.host_port = host_port
+        self.guest_port = guest_port
+        self.proto = proto
+
+
+class Volume:
+    def __init__(self, volume_name: str, guest_mount_point: str, mode: str='rw'):
+        self.volume_name = volume_name
+        self.guest_mount_point = guest_mount_point
+        self.mode = mode
+
+
 def command() -> list:
     return ['container', 'c']
 
@@ -53,6 +68,9 @@ def import_command(docker_client: docker.Client, args, state: dict):
                           "See https://github.com/leftstache/dkr/blob/master/README.md for more information."
         cmd.add_argument('-o', '--option', action='append', help=option_help_msg)
         cmd.add_argument('--name', help="The name of the container")
+        cmd.add_argument('-p', '--publish', action='append', help="Publish a container's port(s) to the host")
+        cmd.add_argument('-v', '--volume', action='append', help="Bind mount a volume")
+        cmd.add_argument('-e', '--env', action='append', help="Set environment variables")
         cmd.add_argument('image', help="The image to create the container from")
         cmd.add_argument('cmd', nargs="*", help="The command to run")
 
@@ -149,6 +167,102 @@ def inspect_container(docker_client: docker.Client, args, state: dict):
     print(yaml.dump(container, default_flow_style=False))
 
 
+def bind_volumes(volumes: list, docker_args: dict):
+    volumes_cleaned = [split_volume(volume) for volume in volumes]
+    docker_args['volumes'] = [volume.guest_mount_point for volume in volumes_cleaned]
+
+    volume_host_config = {}
+    for volume in volumes_cleaned:
+        volume_host_config[volume.volume_name] = {
+            'bind': volume.guest_mount_point,
+            'mode': volume.mode
+        }
+
+    if 'host_config' not in docker_args:
+        docker_args['host_config'] = {}
+    docker_args['host_config']['binds'] = volume_host_config
+
+
+def bind_ports(ports: list, docker_args: dict):
+    ports_cleaned = [split_port(port) for port in ports]
+    guest_ports = [format_guest_port(port) for port in ports_cleaned]
+    host_config_ports = format_host_port(ports_cleaned)
+
+    if 'host_config' not in docker_args:
+        docker_args['host_config'] = {}
+
+    docker_args['ports'] = guest_ports
+    docker_args['host_config']['port_bindings'] = host_config_ports
+
+
+def format_host_port(ports: list) -> dict:
+    result = {}
+    for port in ports:
+        key = port.guest_port
+        if port.proto:
+            key = "{}/{}".format(port.guest_port, port.proto)
+
+        value = port.host_port
+        if port.ip:
+            value = (port.ip, value)
+
+        result[key] = value
+
+    return result
+
+
+def format_guest_port(port: Port):
+    guest_port = port.guest_port
+    if port.proto != 'tcp':
+        return guest_port, port.proto
+    return guest_port
+
+
+def split_volume(volume: str) -> Volume:
+    split = volume.split(":")
+    if len(split) == 3:
+        volume_name = split[0]
+        guest_mount_point = split[1]
+        mode = split[2]
+    elif len(split) == 2:
+        volume_name = split[0]
+        guest_mount_point = split[1]
+        mode = 'rw'
+    else:
+        raise errors.DkrException("Volume parameter must have 2 or 3 parts: NAME:PATH[:MODE]", errors.INVALID_INPUT)
+
+    return Volume(volume_name, guest_mount_point, mode)
+
+
+def split_port(port: str) -> Port:
+    split = port.split(":")
+
+    ip = None
+    host_port = None
+    guest_port = None
+    proto = "tcp"
+
+    if len(split) == 3 and '.' in split[0]:
+        ip = split[0]
+        host_port = split[1]
+        guest_port = split[2]
+    elif len(split) == 2 and '.' in split[0]:
+        ip = split[0]
+        guest_port = split[1]
+    elif len(split) == 2:
+        host_port = split[0]
+        guest_port = split[1]
+    elif len(split) == 1:
+        guest_port = split[0]
+
+    if guest_port and '/' in guest_port:
+        split = guest_port.split('/')
+        guest_port = split[0]
+        proto = split[1]
+
+    return Port(ip, int(host_port), int(guest_port), proto)
+
+
 def create_container(docker_client: docker.Client, args, state: dict):
     image = args.image
     if image == '-':
@@ -158,6 +272,10 @@ def create_container(docker_client: docker.Client, args, state: dict):
     cmd = args.cmd if args.cmd else None
     name = args.name if args.name else None
 
+    ports = args.publish
+    volumes = args.volume
+    environment_variables = args.env
+
     docker_args = {}
 
     if 'option' in args:
@@ -165,12 +283,19 @@ def create_container(docker_client: docker.Client, args, state: dict):
         if user_docker_options:
             docker_args.update(user_docker_options)
 
-    docker_args['image'] = image
-    docker_args['command'] = cmd
-    docker_args['name'] = name
+    if volumes:
+        bind_volumes(volumes, docker_args)
+
+    if ports:
+        bind_ports(ports, docker_args)
 
     if 'host_config' in docker_args:
         docker_args['host_config'] = docker_client.create_host_config(**docker_args['host_config'])
+
+    # Do these last so that the -o options don't override them
+    docker_args['image'] = image
+    docker_args['command'] = cmd
+    docker_args['name'] = name
 
     container = docker_client.create_container(**docker_args)
 
